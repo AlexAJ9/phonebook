@@ -14,7 +14,7 @@ app.use(express.static('build'))
 morgan.token('data', function (req, res) { return JSON.stringify(req.body) })
 app.use(morgan(":method :url :status :res[content-length] - :response-time ms :data "))
 
-
+const entries =[]
 
 app.get("/api/persons", (req, res) => {
 
@@ -42,9 +42,10 @@ app.delete("/api/persons/:id", (req, res) => {
     res.status(204).end();
 })
 app.post("/api/persons", (req, res) => {
+    
     const body = req.body
-    if (body.content === undefined) {
-        return response.status(400).json({ error: 'content missing' })
+    if (body.name === undefined) {
+        return res.status(400).json({ error: 'content missing' })
       }
     if (!body.number) {
         return res.status(400).json({
@@ -63,10 +64,10 @@ app.post("/api/persons", (req, res) => {
         
     })
 
-    Person.save().then(savedPerson=>{
+    person.save().then(savedPerson=>{
         res.json(savedPerson.toJSON())
     })
-    res.json(person)
+    
 })
 const PORT = process.env.PORT
 app.listen(PORT, () => {
