@@ -54,11 +54,11 @@ app.delete("/api/persons/:id", (req, res, next) => {
 })
 app.post("/api/persons", (req, res) => {
     const body = req.body
-    if (body.name === undefined) {
-        return res.status(400).json({ error: 'content missing' })
+    if (body.name === "") {
+        return res.status(400).send({ error: 'content missing' })
     }
     if (!body.number) {
-        return res.status(400).json({
+        return res.status(400).send({
             error: "number is mising"
         })
     }
