@@ -15,71 +15,57 @@ morgan.token('data', function (req, res) { return JSON.stringify(req.body) })
 app.use(morgan(":method :url :status :res[content-length] - :response-time ms :data "))
 
 
-app.get("/api/persons", (req, res) => {
-
-    Person.find({}).then(person => {
-        res.json(person)
-    })
-
+app.get("/api/persons", (req, res, next) => {
+    Person
+        .find({})
+        .then(person => res.json(person))
+        .catch(next => next(error))
 })
 app.get("/info", (reqest, response) => {
     let numberOfEntries = 0;
-    let date = Date();
-    Person.find().then(people => {
-        people.forEach(person => {
-            numberOfEntries++;
-            console.log(numberOfEntries);
+    Person.find()
+        .then(people => {
+            people.forEach(person => numberOfEntries++)
+            response.send(`Phonebook has ${numberOfEntries} people  ${Date()}`)
         })
-        response.send(`Phonebook has ${numberOfEntries} people  ${date}`)
-    })
 })
 app.get("/api/persons/:id", (req, res, next) => {
     let id = req.params.id
     console.log(req.params.id)
-    Person.findById(id).then(person => {
-        if (person) {
-            res.json(person.toJSON())
-        }
-        else res.status(404).end()
-    })
-        .catch(error => next(error)
-        )
+    Person.findById(id)
+        .then(person => {
+            if (person) { res.json(person.toJSON()) }
+            else res.status(404).end()
+        })
+        .catch(error => next(error))
 })
 app.delete("/api/persons/:id", (req, res, next) => {
     let id = req.params.id;
-    Person.findByIdAndRemove(id).then(result => {
-        res.status(204).end()
-    })
+    Person.findByIdAndRemove(id)
+        .then(result => res.status(204).end())
         .catch(error => next(error))
 })
-app.post("/api/persons", (req, res) => {
+app.post("/api/persons", (req, res, next) => {
     const body = req.body
-    if (body.name === "") {
-        return res.status(400).send({ error: 'content missing' })
-    }
-    if (!body.number) {
-        return res.status(400).send({
-            error: "number is mising"
-        })
-    }
     let person = new Person({
         name: body.name,
         number: body.number,
     })
-    person.save().then(savedPerson => {
-        res.json(savedPerson.toJSON())
-    })
+    person
+        .save()
+        .then(savedPerson => savedPerson.toJSON())
+        .then(savedAndFormattedPerson => res.json(savedAndFormattedPerson))
+        .catch(error => next(error))
 
 })
-app.put("/api/persons/:id", (req,res,next)=>{
-   const updatedPerson={
-       name:req.body.name,
-       number:req.body.number
-   }
-    Person.findByIdAndUpdate(req.params.id,updatedPerson,{new:true,useFindAndModify:false}).then(person=>{
-         res.json(person.toJSON()) 
-    })
-    .catch(error=>next(error))
+app.put("/api/persons/:id", (req, res, next) => {
+    const updatedPerson = {
+        name: req.body.name,
+        number: req.body.number
+    }
+    Person.findByIdAndUpdate(req.params.id, updatedPerson, { new: true, useFindAndModify: false })
+        .then(person => res.json(person.toJSON()))
+        .catch(error => next(error))
 })
 
 const unknownEndpoint = (req, res) => {
@@ -89,13 +75,14 @@ app.use(unknownEndpoint)
 
 const errorHandler = (error, req, res, next) => {
     console.log(error.message);
-    if (error.name = "Cast Error" || error.kind === "ObjectId") {
+    if (error.name ==="CastError" && error.kind === "ObjectId") {
         return res.status(400).send({ error: "bad id" })
+    }
+    else if (error.name === 'ValidationError') {
+        return res.status(400).json({ error: error.message })
     }
     next(error)
 }
 app.use(errorHandler)
 const PORT = process.env.PORT
-app.listen(PORT, () => {
-    console.log(`Server is running on ${PORT}`)
-})
+app.listen(PORT, () => console.log(`Server is running on ${PORT}`))
